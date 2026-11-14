@@ -22,6 +22,9 @@ set -euo pipefail
 
 IN="${1:?사용법: $0 <phh GSI .img.xz|.img> [출력폴더]}"
 OUT="${2:-$PWD/diag_gsi_out}"
+[ -f "$IN" ] || { echo "입력 파일이 없습니다: $IN"; exit 1; }
+IN="$(cd "$(dirname "$IN")" && pwd)/$(basename "$IN")"   # 작업 폴더로 cd 하므로 절대 경로로
+mkdir -p "$OUT" && OUT="$(cd "$OUT" && pwd)"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 RC="$HERE/zz_dsu_diag.rc"
 SH="$HERE/dsudiag.sh"

@@ -2,8 +2,6 @@
 
 Releases의 `aoc_dsu_diag_v2_phh-v313-vanilla.img.gz`에 대한 설명입니다.
 
-> ⏳ **공개 준비 중**: 이 저장소의 `tools/`로 다시 빌드하고 DSU 부팅을 다시 확인한 뒤 Releases에 올립니다. 올릴 때 크기·SHA-256·`KEY_SYSTEM_SIZE`를 아래 표와 Releases 설명에 적습니다.
-
 ## 무엇인가
 
 | 항목 | 내용 |
@@ -11,8 +9,9 @@ Releases의 `aoc_dsu_diag_v2_phh-v313-vanilla.img.gz`에 대한 설명입니다.
 | 원본 | **phh Treble GSI v313**, `system-roar-arm64-ab-vanilla.img.xz` (AOSP Android 11, arm64, Google 앱 없음 "vanilla") |
 | 원본 배포처 | <https://github.com/phhusson/treble_experimentations/releases/tag/v313> (Pierre-Hugues Husson, "phh") |
 | 만든 방법 | 이 저장소의 [`tools/build_diag_gsi.sh`](./tools/build_diag_gsi.sh) |
-| 크기 | gzip 약 930MB / 풀면 약 2.3GB (`KEY_SYSTEM_SIZE`는 Releases 설명 참고) |
-| SHA-256 | Releases의 `SHA256SUMS.txt` |
+| 원본 SHA-256 | `system-roar-arm64-ab-vanilla.img.xz` = `b7f9df755f64d4e6ef98bdb8002fa3763e8b818d52427d7b5cba4f9e024122a7` |
+| 크기 | gzip 929,459,666 B / 풀면 2,325,557,248 B (`KEY_SYSTEM_SIZE`) |
+| SHA-256 (.gz) | `d591374cc0ac95e0177b1716dd02ac21930837aada607467ebe976d32f384385` |
 | 용도 | AOC 10W1D에서 DSU로 **한 번만** 부팅해 root 셸을 얻고 순정 파티션을 백업하기 위함. 일상용 시스템이 아닙니다(화면이 그려지지 않음) |
 
 **제조사 펌웨어는 들어 있지 않습니다.** AOC/제조사의 `boot`·`vendor`·`logo`·`waveform` 등은 올리지 않으며, 이 이미지는 phh GSI(=AOSP 기반 공개 소스 빌드)의 `system` 파티션 이미지일 뿐입니다.
@@ -29,6 +28,8 @@ Releases의 `aoc_dsu_diag_v2_phh-v313-vanilla.img.gz`에 대한 설명입니다.
    - `/system/build.prop` — 끝에 `persist.sys.usb.config=adb` 한 줄 추가
 4. 최소 크기로 줄인 뒤 `avbtool add_hashtree_footer`로 해시트리를 새로 만듦(sha1, **AOSP 공개 테스트 키** `testkey_rsa2048`). 부트로더가 언락(orange)인 기기에서만 의미가 있습니다.
 5. gzip 압축
+
+**만든 과정과 확인 (2026-11-15)**: 위 phh 원본(sparse)을 raw로 바꾸고 이 저장소의 `tools/build_diag_gsi.sh`·`zz_dsu_diag.rc`·`dsudiag.sh`를 그대로 실행해 만들었습니다(`avbtool verify_image` 통과). 실기기 DSU 시험에 쓴 이전 빌드와 블록 단위로 비교하면, ext4 안에서 다른 곳은 두 파일의 **주석 문구**(`zz_dsu_diag.rc` 첫 줄, `build.prop`에 덧붙인 주석 한 줄)와 파일 시각·superblock뿐이고, 실행되는 명령·`dsudiag.sh`·추가된 속성 값은 바이트 단위로 같습니다. 나머지 차이는 해시트리(빌드할 때마다 솔트가 새로 정해짐)입니다.
 
 직접 만들고 싶다면 phh 원본을 내려받아 `tools/build_diag_gsi.sh`를 Linux/WSL에서 실행하세요([README §4](./README.md#4-1단계-진단-gsi-만들기)).
 
@@ -47,4 +48,4 @@ phh 원본 바이너리는 변경 없이 다시 배포하는 것이며, 소스�
 
 ## English
 
-`aoc_dsu_diag_v2_phh-v313-vanilla.img.gz` is the **phh Treble GSI v313** `system-roar-arm64-ab-vanilla` (AOSP 11) system image, modified only by [`tools/build_diag_gsi.sh`](./tools/build_diag_gsi.sh): AVB footer stripped, ext4 unshared and grown, three files added/changed (`/system/etc/init/zz_dsu_diag.rc`, `/system/bin/dsudiag.sh`, one line `persist.sys.usb.config=adb` in `/system/build.prop`), shrunk, and a new hashtree footer added with the public AOSP test key. No vendor/OEM firmware is included. Components keep their own licenses (mostly Apache-2.0, some GPL/LGPL/BSD); sources: AOSP (android.googlesource.com), phhusson/treble_experimentations, phhusson/device_phh_treble and the phhusson `platform_*` repositories. The repository's MIT license covers only our scripts and documents. **Status: being rebuilt from this repository's `tools/` and re-tested before upload.**
+`aoc_dsu_diag_v2_phh-v313-vanilla.img.gz` is the **phh Treble GSI v313** `system-roar-arm64-ab-vanilla` (AOSP 11) system image, modified only by [`tools/build_diag_gsi.sh`](./tools/build_diag_gsi.sh): AVB footer stripped, ext4 unshared and grown, three files added/changed (`/system/etc/init/zz_dsu_diag.rc`, `/system/bin/dsudiag.sh`, one line `persist.sys.usb.config=adb` in `/system/build.prop`), shrunk, and a new hashtree footer added with the public AOSP test key. No vendor/OEM firmware is included. Components keep their own licenses (mostly Apache-2.0, some GPL/LGPL/BSD); sources: AOSP (android.googlesource.com), phhusson/treble_experimentations, phhusson/device_phh_treble and the phhusson `platform_*` repositories. The repository's MIT license covers only our scripts and documents. Built on 2026-11-15 from the official v313 `.xz` (SHA-256 `b7f9df75…`) with this repository's `tools/` unchanged; compared block by block with the build used for the on-device DSU tests, the only ext4 differences are two comment lines, file times and the superblock (commands, `dsudiag.sh` and the added property are byte-identical), plus the re-salted hashtree.

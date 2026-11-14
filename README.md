@@ -8,7 +8,7 @@
 - 검증일: 2026-11-14
 - 결과: DSU 부팅 → GSI root ADB 확보 → 전 파티션 18개 덤프(블록 디바이스·기기 파일·PC 파일 SHA-256 3중 일치) → 순정 복귀까지 실측 완료
 - **후속 가이드: [Magisk 루팅과 부팅·충전·슬립·종료 화면 바꾸기](./MAGISK_AND_SCREENS.md)** (2026-11-14 검증)
-- **처음이라면: [초보자 안내서](./BEGINNER_GUIDE.md)** — Linux·Python 없이 Windows에서 복사·붙여넣기로 백업 → 루팅 → 화면 바꾸기 앱까지. 앱·테마 그림·스크립트는 [Releases](https://github.com/zlkiki/AOC-10W1D-DSU-Root/releases/latest)에 있고, 미리 만든 진단 GSI는 최종 점검 후 올립니다([GSI 출처·라이선스](./GSI_NOTICE.md)). 문제가 생기면 [비상 복구](./RECOVERY.md).
+- **처음이라면: [초보자 안내서](./BEGINNER_GUIDE.md)** — Linux·Python 없이 Windows에서 복사·붙여넣기로 백업 → 루팅 → 화면 바꾸기 앱까지. 진단 GSI·앱·테마 그림·스크립트는 [Releases](https://github.com/zlkiki/AOC-10W1D-DSU-Root/releases/latest)에 있습니다([GSI 출처·라이선스](./GSI_NOTICE.md)). 문제가 생기면 [비상 복구](./RECOVERY.md).
 - 참고한 선례: [zhalps/Duokan-Pro2](https://github.com/zhalps/Duokan-Pro2) (샤오미 듀오칸 Pro 2, 같은 RK3566 + Android 11)
 
 ---
@@ -134,7 +134,7 @@ python tools/aoc_full_rom_dump.py preflight
 
 phh 원본 GSI에 **파일 3개를 추가한 "진단 GSI"** 를 만듭니다. 이게 이 가이드의 핵심입니다.
 
-> 이 스크립트로 만든 이미지(`aoc_dsu_diag_v2_phh-v313-vanilla.img.gz`)를 [Releases](https://github.com/zlkiki/AOC-10W1D-DSU-Root/releases/latest)에 올릴 예정입니다(최종 점검 중). 출처·라이선스·변경 사항은 [GSI_NOTICE.md](./GSI_NOTICE.md)를 보세요.
+> 직접 빌드하지 않아도 됩니다: 이 스크립트로 만든 이미지(`aoc_dsu_diag_v2_phh-v313-vanilla.img.gz`, `KEY_SYSTEM_SIZE` `2325557248`)가 [Releases](https://github.com/zlkiki/AOC-10W1D-DSU-Root/releases/latest)에 있습니다. 출처·라이선스·변경 사항은 [GSI_NOTICE.md](./GSI_NOTICE.md)를 보세요.
 
 | 추가 파일 | 역할 |
 |:---|:---|
@@ -537,7 +537,7 @@ AOC-10W1D-DSU-Root/
     └── aoc_make_eink_themes.py ← Releases 테마 그림 9종×5장 생성기 (Pillow, numpy)
 ```
 
-Releases: 서명된 앱(`EinkScreens-v1.2.apk`), 테마 그림(`EinkThemes.zip`), 두 기기용 스크립트, `SHA256SUMS.txt`. 진단 GSI(`.img.gz`)는 최종 점검 후 추가.
+Releases: 진단 GSI(`.img.gz`), 서명된 앱(`EinkScreens-v1.2.apk`), 테마 그림(`EinkThemes.zip`), 두 기기용 스크립트, `SHA256SUMS.txt`.
 
 `aoc_full_rom_dump.py`는 `adb`가 PATH에 있어야 하고, 기기가 1대만 연결되어 있으면 자동으로 선택합니다(여러 대면 `--serial` 또는 `ANDROID_SERIAL`).
 
@@ -560,7 +560,7 @@ Releases: 서명된 앱(`EinkScreens-v1.2.apk`), 테마 그림(`EinkThemes.zip`)
 
 **Follow-up**: Magisk root and boot/charging/sleep/power-off screen replacement are verified in [MAGISK_AND_SCREENS.md](./MAGISK_AND_SCREENS.md).
 
-**Beginners**: [BEGINNER_GUIDE.md](./BEGINNER_GUIDE.md) does everything from Windows PowerShell with no Linux or Python: the signed *E-Ink Screens* app, a theme pack and the scripts are in [Releases](https://github.com/zlkiki/AOC-10W1D-DSU-Root/releases/latest); the prebuilt diagnostic GSI follows after a final check ([GSI notice](./GSI_NOTICE.md)); emergency recovery is in [RECOVERY.md](./RECOVERY.md).
+**Beginners**: [BEGINNER_GUIDE.md](./BEGINNER_GUIDE.md) does everything from Windows PowerShell with no Linux or Python: the prebuilt diagnostic GSI, the signed *E-Ink Screens* app, a theme pack and the scripts are in [Releases](https://github.com/zlkiki/AOC-10W1D-DSU-Root/releases/latest) ([GSI notice](./GSI_NOTICE.md)); emergency recovery is in [RECOVERY.md](./RECOVERY.md).
 
 **Debug tips**: `adb bugreport` includes `LAST KMSG` (ramoops) of the previous boot even on user builds, but only after a *warm* reboot. Long-pressing power on this PMIC cuts power and erases it, so make the GSI reboot itself (`setprop sys.powerctl reboot`). Vendor init lowers the console loglevel, so write `8` to `/proc/sys/kernel/printk` and log with `<2>` priority.
 
