@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.img
+*.img.gz
+*.img.xz
+*.zip
+aoc_full_rom/
+diag_gsi_out/

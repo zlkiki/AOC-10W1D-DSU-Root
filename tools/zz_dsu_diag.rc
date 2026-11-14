@@ -1,0 +1,52 @@
+# AOC 10W1D DSU diagnostic GSI v2 (2026-11-14)
+# - marks init stages in the kernel log (ramoops)
+# - logs USB/adbd state changes
+# - dsudiag service: periodic status, then warm reboot so ramoops survives
+
+on early-init
+    write /proc/sys/kernel/printk 8
+    write /dev/kmsg "<2>DSUDIAG: stage early-init"
+
+on init
+    write /proc/sys/kernel/printk 8
+    write /dev/kmsg "<2>DSUDIAG: stage init"
+
+on late-init
+    write /proc/sys/kernel/printk 8
+    write /dev/kmsg "<2>DSUDIAG: stage late-init"
+    start dsudiag
+
+on post-fs-data
+    write /proc/sys/kernel/printk 8
+    write /dev/kmsg "<2>DSUDIAG: stage post-fs-data"
+
+on boot
+    write /proc/sys/kernel/printk 8
+    write /dev/kmsg "<2>DSUDIAG: stage boot"
+
+on property:sys.usb.config=*
+    write /proc/sys/kernel/printk 8
+    write /dev/kmsg "<2>DSUDIAG: sys.usb.config=${sys.usb.config}"
+
+on property:sys.usb.state=*
+    write /proc/sys/kernel/printk 8
+    write /dev/kmsg "<2>DSUDIAG: sys.usb.state=${sys.usb.state}"
+
+on property:init.svc.adbd=*
+    write /proc/sys/kernel/printk 8
+    write /dev/kmsg "<2>DSUDIAG: init.svc.adbd=${init.svc.adbd}"
+
+on property:init.svc.zygote=*
+    write /proc/sys/kernel/printk 8
+    write /dev/kmsg "<2>DSUDIAG: init.svc.zygote=${init.svc.zygote}"
+
+on property:sys.boot_completed=1
+    write /proc/sys/kernel/printk 8
+    write /dev/kmsg "<2>DSUDIAG: sys.boot_completed=1"
+
+service dsudiag /system/bin/sh /system/bin/dsudiag.sh
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled
