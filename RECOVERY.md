@@ -77,7 +77,7 @@ boot가 깨지면 Android도, `adb reboot fastboot`도, DSU도 쓸 수 없습니
 |:---|:---|
 | **DriverAssistant** (Rockchip USB 드라이버) | 실측: v5.14. 예: [Radxa 배포본](https://dl.radxa.com/tools/windows/DriverAssitant_v5.14.zip). 압축을 풀고 `DriverInstall.exe` → **드라이버 설치** |
 | **RKDevTool** (Windows) | 실측: v3.37. Rockchip이 배포하는 Windows 도구입니다(Radxa·Pine64 등 RK35xx 보드 문서에 내려받기 링크가 있음) |
-| **RK3566 로더 파일**(`.bin`) | RK3566·RK3568 공용 로더. 예: Rockchip `rkbin`의 `rk356x_spl_loader_*.bin`([Radxa rkbin 사본](https://github.com/radxa/rkbin/tree/develop-v2026.01/bin/rk35)). 실측에 쓴 파일과 같은 파일인지는 확인하지 않았습니다 |
+| **RK3566 로더 파일**(`.bin`) | RK3566·RK3568 공용 로더. 실측: Rockchip `rkbin`의 **`rk356x_spl_loader_v1.16.112.bin`**. rkbin 사본(예: [Radxa rkbin](https://github.com/radxa/rkbin/tree/develop-v2026.01/bin/rk35))의 `bin/rk35/`에 `rk356x_spl_loader_v*.bin`이 있습니다. 다른 버전은 이 기기에서 시험하지 않았습니다 |
 | 내 백업 | `aoc_backup\boot.img`, 필요하면 `aoc_backup\logo.img` |
 | USB 포트 | **PC 본체 뒤쪽 USB 2.0 포트** 권장(허브·전면 포트에서 불안정한 사례가 있음) |
 
@@ -142,4 +142,4 @@ Try in this order. Everything needs **your own** backup from the DSU step; never
 2. adb missing after reboot: replug the USB cable (common on this device).
 3. Screens: tap **Stock** in the app; the logo backup lives in `/sdcard/EinkScreens/backup/logo_original.img` (you can push `aoc_backup\logo.img` there).
 4. Android boots: `adb reboot fastboot` → `fastboot flash boot aoc_backup\boot.img` (verified). fastbootd does not know `logo`.
-5. Android does not boot: MaskROM + RKDevTool **Download Image**, only the **Loader** row and the **Boot** row at `0x0000D800`, **Write by Address**, Run (writing at absolute eMMC sectors verified). `logo` is at `0x007FB800`. Entering MaskROM via `adb reboot loader` → *Go Maskrom* is verified; entering it with a dead Android (holding power while plugging USB) is **not** verified. Never use Upgrade Firmware / Erase.
+5. Android does not boot: MaskROM + RKDevTool **Download Image**, only the **Loader** row and the **Boot** row at `0x0000D800`, **Write by Address**, Run (writing at absolute eMMC sectors verified). `logo` is at `0x007FB800`. Loader used in the test: rkbin `rk356x_spl_loader_v1.16.112.bin`. Entering MaskROM via `adb reboot loader` → *Go Maskrom* is verified; entering it with a dead Android (holding power while plugging USB) is **not** verified. Never use Upgrade Firmware / Erase.
