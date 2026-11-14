@@ -6,3 +6,7 @@ __pycache__/
 *.zip
 aoc_full_rom/
 diag_gsi_out/
+*.apk
+*.idsig
+*.jks
+app/out/

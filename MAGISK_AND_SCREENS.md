@@ -2,6 +2,8 @@
 
 > [README](./README.md)의 DSU 절차로 **순정 `boot.img`(64MB 전체)와 eMMC 전체 백업을 확보한 뒤** 진행하는 후속 가이드입니다.
 > 순서: ① boot를 되돌리는 복구 경로를 먼저 실측 → ② Magisk 루팅 → ③ 화면 교체.
+>
+> 이 문서는 **원리와 실측 기록**입니다. 따라 하기만 하려면 [초보자 안내서](./BEGINNER_GUIDE.md)를 보세요. 화면 교체는 이제 기기용 앱 **E-Ink 화면 바꾸기**(소스 [`app/`](./app/), APK는 Releases)로 사진을 골라 할 수 있고, 아래 §4~§6은 그 앱이 내부에서 하는 일입니다.
 
 - 검증 기기·펌웨어: README와 같음 (AOC_10W1D, `WT10S2CN20251225`, Android 11)
 - 검증일: 2026-11-14
@@ -98,6 +100,7 @@ adb pull /data/local/tmp/mk/new-boot.img magisk_patched_boot.img
 ```
 
 - 일반 셸 권한으로 실행됩니다. 아무것도 쓰지 않습니다.
+- 위 추출·이름 바꾸기·패치·결과 검사를 기기 안에서 한 번에 하는 스크립트: [`tools/aoc_magisk_patch.sh`](./tools/aoc_magisk_patch.sh) (기기의 `unzip` 사용, PC에 Python 불필요). 순정 boot `190133…`에서 위 실측과 **같은 결과**(`4f8136e2…`)가 나오는 것을 확인했습니다. 이 펌웨어에는 DocumentsUI가 없어 Magisk 앱의 "파일 선택 후 패치"는 쓸 수 없습니다.
 - 플래그는 Magisk 앱이 이 기기에서 고르는 값과 같습니다: Android 11 system-as-root → `KEEPVERITY=true`, 암호화 없음 → `KEEPFORCEENCRYPT=false`, vbmeta 파티션 있음 → `PATCHVBMETAFLAG=false`.
 - `Failed to patch`가 3번 나오는 것은 삼성 전용 커널 패턴이 없다는 뜻이라 정상입니다.
 
@@ -220,6 +223,8 @@ adb reboot
 | logo | `su dd`로 순정 `logo.img`, 또는 MaskROM 주소 `0x007FB800` |
 | 슬립·종료 PNG | `su -c 'rm /data/misc/eink/*.png'` |
 | 부팅 애니메이션 | Magisk [모듈]에서 삭제 → 재부팅 |
+
+E-Ink 화면 바꾸기 앱을 썼다면 각 화면의 [순정으로]가 위 일을 대신합니다. boot가 깨졌을 때의 절차는 [RECOVERY.md](./RECOVERY.md)에 정리했습니다.
 
 ---
 
