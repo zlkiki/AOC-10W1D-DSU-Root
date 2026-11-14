@@ -7,6 +7,7 @@
 - 검증 기기: **AOC_10W1D** (10.3" Carta E-Ink, Rockchip RK3566, 4GB/64GB, 와콤 EMR, 판매처 표기 `WT10S`, 펌웨어 `WT10S2CN20251225`, Android 11 `RQ2A.210505.003`, 커널 4.19.193)
 - 검증일: 2026-11-14
 - 결과: DSU 부팅 → GSI root ADB 확보 → 전 파티션 18개 덤프(블록 디바이스·기기 파일·PC 파일 SHA-256 3중 일치) → 순정 복귀까지 실측 완료
+- **후속 가이드: [Magisk 루팅과 부팅·충전·슬립·종료 화면 바꾸기](./MAGISK_AND_SCREENS.md)** (2026-11-14 검증)
 - 참고한 선례: [zhalps/Duokan-Pro2](https://github.com/zhalps/Duokan-Pro2) (샤오미 듀오칸 Pro 2, 같은 RK3566 + Android 11)
 
 ---
@@ -500,10 +501,10 @@ eMMC는 `mmcblk2`, 섹터 512B, 총 122,142,720 섹터(약 58.2GiB).
 
 ## 13. 다음 단계 아이디어 (미검증)
 
-이 가이드는 **백업까지**만 검증했습니다. 아래는 시도하지 않은 내용입니다.
+이 문서는 **백업까지** 다룹니다. Magisk 루팅과 화면 교체는 [MAGISK_AND_SCREENS.md](./MAGISK_AND_SCREENS.md)에서 검증했습니다. 아래는 아직 시도하지 않은 내용입니다.
 
 - **더 단순한 진단 GSI**: `build.prop`에 `persist.sys.usb.config=mtp,adb`를 넣거나, `.rc`에 `on boot` → `setprop sys.usb.config adb` 한 줄만 넣어도 될 것으로 보입니다(150초 대기 없이 바로 ADB).
-- **Magisk 루팅**: 받은 `boot.img`(64MB 전체)를 Magisk로 패치한 뒤, GSI root 셸에서 `dd`로 `boot`에 쓰는 방식(듀오칸 선례와 같은 흐름). **이건 `boot` 파티션에 쓰는 작업이라 위험도가 완전히 다릅니다.** 복구 경로(fastbootd 또는 MaskROM에서 순정 `boot.img` 다시 쓰기)를 먼저 확인하세요.
+- ~~Magisk 루팅~~ → 검증 완료: [MAGISK_AND_SCREENS.md](./MAGISK_AND_SCREENS.md) (복구 경로 실측 후 fastbootd로 플래시)
 - **Google 공식 GSI**(`aosp_arm64-exp-RP1A.200720.009`)는 다운로드와 변환까지만 해 두고 부팅은 하지 않았습니다.
 
 ---
@@ -512,13 +513,17 @@ eMMC는 `mmcblk2`, 섹터 512B, 총 122,142,720 섹터(약 58.2GiB).
 
 ```
 AOC-10W1D-DSU-Root/
-├── README.md                  ← 이 문서
+├── README.md                  ← 이 문서 (DSU root 셸·전체 백업)
+├── MAGISK_AND_SCREENS.md      ← 후속: Magisk 루팅, 부팅·충전·슬립·종료 화면 교체
 ├── LICENSE                 ← MIT
 └── tools/
     ├── build_diag_gsi.sh      ← phh GSI → 진단 GSI 빌드 (Linux/WSL)
     ├── zz_dsu_diag.rc         ← GSI에 주입되는 init 스크립트
     ├── dsudiag.sh             ← GSI에 주입되는 진단/USB 강제 스크립트
-    └── aoc_full_rom_dump.py   ← preflight / install-dsu / reboot-dsu / dump / crosscheck
+    ├── aoc_full_rom_dump.py   ← preflight / install-dsu / reboot-dsu / dump / crosscheck
+    ├── bootimg_check.py       ← boot 이미지 섹션 비교 (Magisk 패치 검증)
+    ├── eink_logo.py           ← logo 파티션(RKEL/GR04) 풀기·조립·검증
+    └── make_bootanim_module.py ← /odm/media/bootanimation.zip 교체 Magisk 모듈 생성
 ```
 
 `aoc_full_rom_dump.py`는 `adb`가 PATH에 있어야 하고, 기기가 1대만 연결되어 있으면 자동으로 선택합니다(여러 대면 `--serial` 또는 `ANDROID_SERIAL`).
@@ -539,6 +544,8 @@ AOC-10W1D-DSU-Root/
 **Fix**: inject a small init script into the phh GSI that runs `setprop sys.usb.config adb` + `start adbd` (at 150 s). `adb root` then works (~2:40 after tapping Restart).
 
 **Steps**: `tools/build_diag_gsi.sh` (strip AVB footer → grow + `e2fsck -E unshare_blocks` → inject files with `debugfs` → shrink → `avbtool add_hashtree_footer`) → push → `setprop persist.sys.fflag.override.settings_dynamic_system true` → `am start-activity ... START_INSTALL --el KEY_SYSTEM_SIZE <size> --el KEY_USERDATA_SIZE 17179869184` → tap **Restart** in the notification → `adb root` → `touch /data/local/tmp/dsudiag_stop` (cancels the 8-min auto reboot) → `stop` → `python tools/aoc_full_rom_dump.py dump` → `adb reboot` → `gsi_tool wipe`.
+
+**Follow-up**: Magisk root and boot/charging/sleep/power-off screen replacement are verified in [MAGISK_AND_SCREENS.md](./MAGISK_AND_SCREENS.md).
 
 **Debug tips**: `adb bugreport` includes `LAST KMSG` (ramoops) of the previous boot even on user builds, but only after a *warm* reboot. Long-pressing power on this PMIC cuts power and erases it, so make the GSI reboot itself (`setprop sys.powerctl reboot`). Vendor init lowers the console loglevel, so write `8` to `/proc/sys/kernel/printk` and log with `<2>` priority.
 
