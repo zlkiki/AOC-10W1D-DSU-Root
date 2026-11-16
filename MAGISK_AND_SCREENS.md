@@ -1,6 +1,6 @@
 # AOC 10W1D — Magisk 루팅과 부팅·충전·슬립·종료 화면 바꾸기
 
-> [README](./README.md)의 DSU 절차로 **순정 `boot.img`(64MB 전체)와 eMMC 전체 백업을 확보한 뒤** 진행하는 후속 가이드입니다.
+> [DSU 덤프 가이드](./DSU_DUMP_GUIDE.md)의 DSU 절차로 **순정 `boot.img`(64MB 전체)와 eMMC 전체 백업을 확보한 뒤** 진행하는 후속 가이드입니다. (전체 프로젝트 허브: [README](./README.md))
 > 순서: ① boot를 되돌리는 복구 경로를 먼저 실측 → ② Magisk 루팅 → ③ 화면 교체.
 >
 > 이 문서는 **원리와 실측 기록**입니다. 따라 하기만 하려면 [초보자 안내서](./BEGINNER_GUIDE.md)를 보세요. 화면 교체는 이제 기기용 앱 **E-Ink 화면 바꾸기**(소스 [`app/`](./app/), APK는 Releases)로 사진을 골라 할 수 있고, 아래 §4~§6은 그 앱이 내부에서 하는 일입니다.
@@ -9,7 +9,8 @@
 - 검증일: 2026-11-14
 - 결과: Magisk 30.7 루팅(SELinux Enforcing 유지), 부팅 로고·Android 부팅 애니메이션·꺼진 상태 충전·슬립·종료 화면 교체를 실기기에서 확인
 
-> ⚠️ 이 문서의 작업은 `boot`와 `logo` 파티션에 **실제로 씁니다.** 백업 없이 따라 하지 마세요. **`waveform` 파티션은 기기마다 다른 E-Ink 보정값이므로 절대 쓰지 마세요.**
+> [!CAUTION]
+> 본 문서의 작업은 `boot` 및 `logo` 파티션에 실제 쓰기(Write)를 수행합니다. 사전 백업 없이 진행하지 마십시오. **`waveform` 파티션은 기기 패널 고유의 튜닝 데이터이므로 절대 임의로 덮어쓰지 마십시오.**
 
 ---
 
@@ -33,14 +34,14 @@
 
 | 순서 | 화면 | 담당 | 바꾸는 법 | 확인 |
 |:-:|:---|:---|:---|:-:|
-| 1 | U-Boot 로고 | `logo` 파티션 type `0x1` | [§4](#4-부팅-로고충전저전력-화면-logo-파티션) | ✅ |
-| 2 | 커널 로고 ("System booting…") | `logo` 파티션 type `0x2` | §4 | ✅ |
-| 3 | **Android 부팅 애니메이션** (진행 막대, 가장 오래 보임) | `/odm/media/bootanimation.zip` | [§6](#6-android-부팅-애니메이션-magisk-모듈) | ✅ |
-| — | 꺼진 상태 충전 (배터리 0~5단계) | `logo` 파티션 `0x4~0x80` | §4 | ✅ |
+| 1 | U-Boot 로고 | `logo` 파티션 type `0x1` | [§4](#4-부팅-로고충전저전력-화면-logo-파티션) | 확인 |
+| 2 | 커널 로고 ("System booting…") | `logo` 파티션 type `0x2` | §4 | 확인 |
+| 3 | **Android 부팅 애니메이션** (진행 막대, 가장 오래 보임) | `/odm/media/bootanimation.zip` | [§6](#6-android-부팅-애니메이션-magisk-모듈) | 확인 |
+| — | 꺼진 상태 충전 (배터리 0~5단계) | `logo` 파티션 `0x4~0x80` | §4 | 확인 |
 | — | 부팅 시 저전력 | `logo` 파티션 `0x100` | §4 | 미재현 |
 | — | U-Boot/커널 쪽 종료 | `logo` 파티션 `0x200` | §4 | 미재현 |
-| — | **슬립(대기)** | vendor hwcomposer → `/data/misc/eink/standby.png` | [§5](#5-슬립종료-화면-datamisceink) | ✅ |
-| — | **종료** (Android에서 끌 때) | hwcomposer → `/data/misc/eink/poweroff.png` | §5 | ✅ |
+| — | **슬립(대기)** | vendor hwcomposer → `/data/misc/eink/standby.png` | [§5](#5-슬립종료-화면-datamisceink) | 확인 |
+| — | **종료** (Android에서 끌 때) | hwcomposer → `/data/misc/eink/poweroff.png` | §5 | 확인 |
 | — | 충전 중·완충·저전력 슬립, 방전 종료 | hwcomposer → `standby_charge.png` 등 | §5 | 쓰이지 않는 것으로 보임 ([§8](#8-알려진-한계와-함정)) |
 
 > 순정 `WeGallery`(갤러리)의 "대기 화면으로 지정" 기능은 메뉴 배열 누락 버그로 화면에 나오지 않습니다. 그 기능이 쓰는 `/data/misc/standby.png`는 이 펌웨어의 화면 표시에 쓰이지 않습니다.
@@ -53,9 +54,9 @@ boot가 깨지면 `adb reboot fastboot`도, DSU도 쓸 수 없습니다. **DSU�
 
 | 경로 | Android 필요 | 실측 방법 | 결과 |
 |:---|:-:|:---|:---|
-| A. fastbootd `fastboot flash boot` | 진입 시 필요 | 순정 `boot.img`를 그대로 씀 | 🟢 Writing OKAY |
-| B. DSU root 셸 `dd` | DSU 설치 시 필요 | 순정 `boot.img`를 `dd` → 캐시 비우고 블록 SHA-256 비교 | 🟢 일치 |
-| **C. MaskROM + RKDevTool `Write by Address`** | **불필요** | 전부 0인 `backup` 파티션 한가운데(LBA `0x000BF800`)에 1MB 표식 → DSU root에서 읽어 확인 → 0으로 복원 | 🟢 정확한 주소에 기록, 나머지 무변경 |
+| A. fastbootd `fastboot flash boot` | 진입 시 필요 | 순정 `boot.img`를 그대로 씀 | 성공 (Writing OKAY) |
+| B. DSU root 셸 `dd` | DSU 설치 시 필요 | 순정 `boot.img`를 `dd` → 캐시 비우고 블록 SHA-256 비교 | 성공 (해시 일치) |
+| **C. MaskROM + RKDevTool `Write by Address`** | **불필요** | 전부 0인 `backup` 파티션 한가운데(LBA `0x000BF800`)에 1MB 표식 → DSU root에서 읽어 확인 → 0으로 복원 | 성공 (정확한 주소 기록, 타 영역 무변경) |
 
 알게 된 것:
 - **RKDevTool의 주소는 eMMC 절대 섹터입니다.** 기본 행 주소(Misc `0x9000`, Boot `0xD800`, Recovery `0x2F800`)가 GPT 시작 섹터와 같습니다.
@@ -70,7 +71,7 @@ boot가 깨지면 `adb reboot fastboot`도, DSU도 쓸 수 없습니다. **DSU�
 2. `Download Image` 탭: **Loader** 행 ☑ (RK3566 로더 `.bin`), **Boot** 행 ☑ 주소 `0x0000D800` + 순정 `boot.img`. **다른 행은 전부 체크 해제**
 3. `Write by Address` ☑ → `Run` → `Download image OK`
 
-`logo`는 같은 방법으로 주소 `0x007FB800`에 씁니다. 주소는 이 기기의 파티션 표 기준이므로, 다른 기기는 [README §12](./README.md#12-기기-정보-파티션-표-등)처럼 직접 확인하세요.
+`logo`는 같은 방법으로 주소 `0x007FB800`에 씁니다. 주소는 이 기기의 파티션 표 기준이므로, 다른 기기는 [DSU 덤프 가이드 §12](./DSU_DUMP_GUIDE.md#12-기기-정보-파티션-표-등)처럼 직접 확인하세요.
 
 ---
 
@@ -126,11 +127,11 @@ fastboot reboot
 - 부팅 후 PC에서 adb가 안 보이면 **USB 케이블을 다시 꽂으세요.** 이 기기에서 재부팅 뒤 자주 생기는 현상이고, Windows 장치 관리자에는 ADB 인터페이스가 정상으로 보입니다.
 - `adb shell magisk -v` → `30.7:MAGISK:R`이고, su 링크는 `/vendor/bin/su`에 생깁니다.
 
-### 3.4. ⚠️ 첫 su 요청 함정
+### 3.4. 첫 su 권한 요청 처리 시 주의점
 
-E-Ink는 화면 갱신이 느립니다. 그래서 `adb shell su`를 처음 실행하면 **허용 팝업이 10초 시간 초과로 거부되고, Magisk가 Shell을 '거부'로 저장**하기 쉽습니다. 그 뒤로는 팝업 없이 바로 `Permission denied`가 납니다.
+E-Ink는 화면 갱신이 느립니다. 그래서 `adb shell su`를 처음 실행하면 허용 팝업이 10초 시간 초과로 거부되어 Magisk가 Shell을 '거부'로 자동 저장하기 쉽습니다. 그 뒤로는 팝업 없이 바로 `Permission denied`가 발생합니다.
 
-→ Magisk 앱 → **[슈퍼유저] 탭 → "[SharedUID] 셸" 스위치 켜기.** 처음부터 이 탭에서 허용해 두는 것이 편합니다.
+- 대안: Magisk 앱 실행 ➔ **[슈퍼유저] 탭 ➔ "[SharedUID] 셸" 스위치 켜기** (사전에 셸 권한을 허용해 두는 것을 권장합니다).
 
 ---
 
@@ -203,13 +204,13 @@ adb shell su -c 'magisk --install-module /data/local/tmp/eink_bootanim.zip'
 adb reboot
 ```
 
-### 6.1. ⚠️ SELinux 레이블 함정 (실측)
+### 6.1. SELinux 레이블 지정 주의점 (실측)
 
 | 시도 | 결과 |
 |:---|:---|
-| 원본과 같은 `oemfs` 레이블 붙이기 | `avc: denied { associate } … tcontext=labeledfs` — `/data`(f2fs)에는 붙일 수 없음 |
-| `vendor_file` | 붙일 수는 있지만 `avc: denied { read } … scontext=u:r:bootanim:s0` → **AOSP 기본(안드로이드 로고) 애니메이션으로 대체됨** |
-| **`system_file`** | ✅ 붙일 수 있고 bootanim이 읽음 → 교체 성공 |
+| 원본과 같은 `oemfs` 레이블 지정 | `avc: denied { associate } … tcontext=labeledfs` — `/data`(f2fs)에는 적용 불가 |
+| `vendor_file` | 적용 가능하나 `avc: denied { read } … scontext=u:r:bootanim:s0` 발생 ➔ AOSP 기본(안드로이드 로고) 애니메이션으로 대체됨 |
+| **`system_file`** | 적용 가능 및 bootanim 정상 읽기 확인 ➔ 교체 성공 |
 
 > 실기기에서 검증한 것은 같은 로직의 개인용 모듈(v2)입니다. 공개용 `make_bootanim_module.py`는 기본 프레임과 이름만 다릅니다.
 
@@ -237,13 +238,13 @@ E-Ink 화면 바꾸기 앱을 썼다면 각 화면의 [순정으로]가 위 일�
   - 시험할 때는 `svc power stayon usb`로 CPU 절전을 막으세요. 화면이 꺼질 때 USB가 끊길 수 있습니다.
 - `logo` 파티션의 저전력(`0x100`)·종료(`0x200`) 이미지는 기록했지만, 표시되는 상황은 확인하지 못했습니다.
 - 재부팅 후 PC adb가 기기를 못 찾는 일이 잦습니다 → 케이블 재연결.
-- 화면 잠금이 없으면 DSU 설치는 확인 창 없이 바로 시작됩니다(README §5 참고).
+- 화면 잠금이 없으면 DSU 설치는 확인 창 없이 바로 시작됩니다([DSU 덤프 가이드 §5](./DSU_DUMP_GUIDE.md#5-2단계-dsu-설치) 참고).
 
 ---
 
 ## 9. English summary
 
-**Prerequisite**: full stock backup via the DSU method in [README](./README.md) (stock `boot.img` 64 MB).
+**Prerequisite**: full stock backup via the DSU method in [DSU_DUMP_GUIDE.md](./DSU_DUMP_GUIDE.md) (stock `boot.img` 64 MB). Project overview: [README.md](./README.md).
 
 **Recovery paths, verified before touching `boot`** (DSU also boots the stock boot's kernel/ramdisk, so a broken boot kills DSU too):
 - fastbootd `fastboot flash boot` works (tested with the identical stock image).
