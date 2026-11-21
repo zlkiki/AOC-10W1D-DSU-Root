@@ -3,7 +3,7 @@
 Rockchip RK3566 기반 Android 11 E-Ink 태블릿(AOC 10W1D)을 위한 DSU 기반 엔지니어링 툴킷 및 기술 문서입니다. 시스템 파티션 수정 없이 임시 DSU(Dynamic System Updates) 진단 GSI 환경에서 `adb root`를 활성화하여 eMMC 18개 파티션 전체(64MB boot 포함) 덤프, Magisk 30.7 시스템리스 루팅, E-Ink 화면 리소스 제어 및 MaskROM 비상 복구 절차를 다룹니다.
 
 - **대상 기기**: `AOC_10W1D` (10.3" Carta E-Ink, Rockchip RK3566, 4GB RAM, 64GB eMMC, 와콤 EMR, 판매처 표기 `WT10S`, 펌웨어 `WT10S2CN20251225`, Android 11 `RQ2A.210505.003`, 커널 4.19.193)
-- **검증 상태**: 전 과정 실기기 실측 및 검증 완료 (2026-11-14 ~ 2026-11-15)
+- **검증 상태**: 검증 기기 1대에서 전 과정 실측 (2026-11-14 ~ 2026-11-15). 다른 AOC 기기에서 초보자 안내서를 따라 한 사용자 보고 1건(성공, 첫 부팅 때 Magisk 확인 단계에서 차이 → [안내서 5.3](./BEGINNER_GUIDE.md#53-루팅-확인과-셸-허용)에 반영)
 - **공개 저장소**: <https://github.com/zlkiki/AOC-10W1D-DSU-Root> (MIT License)
 - **릴리즈 배포**: [Releases v2026.11.14](https://github.com/zlkiki/AOC-10W1D-DSU-Root/releases/latest) (클린 진단 GSI, 전용 앱, 테마팩, 자동화 도구)
 - **선례 참조**: [zhalps/Duokan-Pro2](https://github.com/zhalps/Duokan-Pro2) (샤오미 듀오칸 Pro 2 선례)
@@ -17,27 +17,26 @@ Rockchip RK3566 기반 Android 11 E-Ink 태블릿(AOC 10W1D)을 위한 DSU 기�
    - Rockchip U-Boot의 32MB LBA 읽기 제한(`0xCC` 더미 패딩) 및 fastbootd `fetch` 미지원 문제를 해결.
 2. **Magisk 30.7 시스템리스 루팅**:
    - 덤프된 순정 `boot.img`에 Magisk 패치를 적용하여 플래시.
-   - 순정 Android 11 환경 및 와콤 EMR 필기 레이턴시 저하 없이 SELinux Enforcing 상태 루팅 유지.
+   - 시스템 파티션은 건드리지 않는 시스템리스 방식이며, 루팅 후에도 SELinux는 Enforcing 그대로입니다.
 3. **온디바이스 화면 제어 도구 (`EinkScreens v1.2`)**:
    - 순수 Java/SDK 빌드 (57KB, 외부 종속성 배제).
    - DocumentsUI 부재 환경 대응 자체 파일 브라우저 내장.
    - 슬립, 종료, 부팅 로고, 부팅 애니메이션, 꺼진 상태 충전 등 5개 화면을 16단계 오차확산(디더링)으로 변환 및 적용. 순정 복원 기능 지원.
-4. **E-Ink 최적화 테마 리소스 (75장 번들)**:
-   - 1404x1872 해상도 및 16-Gray 스케일에 맞춘 기하/풍경 테마 9종 (45장).
-   - 퍼블릭 도메인 고전 판화 명화 6세트 (30장: 알브레히트 뒤러, 귀스타브 도레, 호쿠사이 등).
+4. **E-Ink용 테마 그림 (Releases `EinkThemes.zip`, 9종 45장)**:
+   - 1404x1872 해상도·16단계 그레이에 맞춘 글자 없는 테마 9종 × 5장. [`tools/aoc_make_eink_themes.py`](./tools/aoc_make_eink_themes.py)로 다시 만들 수 있습니다.
 5. **하드웨어 비상 복구 절차 규명**:
-   - Fastbootd 및 Rockchip 하드웨어 MaskROM 모드(`rk3566_loader.bin` + RKDevTool)를 통한 공장 출고 상태 복원 절차 확립.
+   - fastbootd로 순정 boot 되돌리기, MaskROM + RKDevTool(`rk3566_loader.bin`) 주소 지정 쓰기를 이 기기에서 실측했습니다. Android가 켜지지 않는 상태에서 MaskROM으로 들어가는 방법은 아직 실측하지 않았습니다([RECOVERY.md](./RECOVERY.md)의 [미검증] 표시).
 
 ---
 
-## 프로젝트 문서 체계 및 역할 (SSOT Documentation Hub)
+## 문서 안내
 
 본 프로젝트는 목적과 작업 범위에 따라 역할을 분리한 문서 체계로 구성되어 있습니다.
 
 | 문서명 | 주요 내용 | 대상 독자 / 권장 상황 | 링크 |
 |:---|:---|:---|:---|
 | **초보자 실전 안내서**<br>`BEGINNER_GUIDE.md` | Windows PowerShell 복사·붙여넣기 기반 순정 백업, Magisk 루팅, 화면 교체 앱 구동 매뉴얼 | 일반 사용자 | [BEGINNER_GUIDE.md](./BEGINNER_GUIDE.md) |
-| **DSU 덤프 & 기술 가이드**<br>`DSU_DUMP_GUIDE.md` | DSU 진단 GSI 제작, USB 가젯 스크립트 메커니즘, 18개 파티션 덤프 및 무결성 검증 명세 (SSOT) | 개발자, 엔지니어, 에이전트 | [DSU_DUMP_GUIDE.md](./DSU_DUMP_GUIDE.md) |
+| **DSU 덤프 & 기술 가이드**<br>`DSU_DUMP_GUIDE.md` | DSU 진단 GSI 제작, USB 가젯 스크립트 메커니즘, 18개 파티션 덤프 및 무결성 검증 명세 | 개발자 | [DSU_DUMP_GUIDE.md](./DSU_DUMP_GUIDE.md) |
 | **Magisk 루팅 & 화면 커스텀**<br>`MAGISK_AND_SCREENS.md` | Magisk 30.7 구조, `logo` 파티션 RKEL 헤더 분석, `/data/misc/eink` 및 부팅 애니메이션 수동 제어 규격 | 시스템 제어 분석가 | [MAGISK_AND_SCREENS.md](./MAGISK_AND_SCREENS.md) |
 | **비상 복구 매뉴얼**<br>`RECOVERY.md` | 부팅 중단, ADB 미검출, 화면 오류 시 Fastbootd 및 MaskROM/RKDevTool 기반 순정 팩토리 롤백 절차 | 장애 복구 상황 | [RECOVERY.md](./RECOVERY.md) |
 | **진단 GSI 고지 및 라이선스**<br>`GSI_NOTICE.md` | phh AOSP v313 원본 출처, 오픈소스 라이선스, 개인정보 완전 제거 검증 및 SHA-256 해시 고지 | 검증 및 라이선스 확인 | [GSI_NOTICE.md](./GSI_NOTICE.md) |
@@ -46,7 +45,7 @@ Rockchip RK3566 기반 Android 11 E-Ink 태블릿(AOC 10W1D)을 위한 DSU 기�
 
 ---
 
-## 시작 경로 안내 (Decision Tree)
+## 어디서 시작할까
 
 ```text
                                  [기기 작업 시작]
@@ -86,7 +85,7 @@ Rockchip RK3566 기반 Android 11 E-Ink 태블릿(AOC 10W1D)을 위한 DSU 기�
 
 ```text
 AOC-10W1D-DSU-Root/
-├── README.md                  ← [본 문서] 프로젝트 개요 및 문서 색인 (SSOT Hub)
+├── README.md                  ← [본 문서] 프로젝트 개요 및 문서 안내
 ├── BEGINNER_GUIDE.md          ← 초보자용 Windows 단계별 실전 가이드
 ├── DSU_DUMP_GUIDE.md          ← DSU 진단 GSI 제작 및 전체 파티션 덤프 엔지니어링 명세
 ├── MAGISK_AND_SCREENS.md      ← Magisk 루팅 및 화면 리소스 제어 기술 상세

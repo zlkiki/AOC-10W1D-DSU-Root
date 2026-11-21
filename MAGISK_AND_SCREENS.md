@@ -126,6 +126,7 @@ fastboot reboot
 
 - 부팅 후 PC에서 adb가 안 보이면 **USB 케이블을 다시 꽂으세요.** 이 기기에서 재부팅 뒤 자주 생기는 현상이고, Windows 장치 관리자에는 ADB 인터페이스가 정상으로 보입니다.
 - `adb shell magisk -v` → `30.7:MAGISK:R`이고, su 링크는 `/vendor/bin/su`에 생깁니다.
+- 다른 기기 사용자 보고: 첫 부팅에서 `magisk -v`가 `inaccessible or not found`였지만 `df`에 `magisk` tmpfs(`/debug_ramdisk`, `/debug_ramdisk/.magisk/worker`)가 있었습니다. Magisk 앱에서 설정하자 기기가 재시작됐고, 그 뒤로는 정상이었습니다. 검증 기기에서는 재현되지 않았고(첫 부팅부터 정상, "추가 설정" 안내 없음) 원인은 확인하지 못했습니다. PC에서 boot를 썼기 때문에 앱이 평소 채워 두는 `/data/adb/magisk`가 비어 있었고, 앱의 추가 설정이 그것을 채운 것으로 추정합니다. **이때 boot를 다시 쓸 필요는 없습니다.**
 
 ### 3.4. 첫 su 권한 요청 처리 시 주의점
 

@@ -12,7 +12,7 @@
 
 - 검증 기기: AOC_10W1D, 펌웨어 `WT10S2CN20251225`(Android 11). **다른 기기·다른 펌웨어에는 쓰지 마세요.**
 - 걸리는 시간: 처음 한 번 **약 1시간 30분**(대부분 기다리는 시간)
-- 이 안내서의 명령은 모두 실기기에서 실행해 확인한 것입니다. 다만 **완전히 순정인 기기로 처음부터 끝까지 이 문서만 보고 따라 하는 시험은 아직 진행 중**입니다(결과는 이 문서에 반영합니다).
+- 이 안내서의 명령은 모두 실기기에서 실행해 확인한 것입니다. 다른 AOC 기기에서 이 문서를 따라 해 성공한 사용자 보고가 1건 있고, 그때 나온 차이를 [5.3](#53-루팅-확인과-셸-허용)에 반영했습니다. **완전히 순정인 기기로 처음부터 끝까지 하는 자체 시험은 아직 진행 중**입니다(결과는 이 문서에 반영합니다).
 
 > ⚠️ **책임**: 루팅은 기기의 `boot` 파티션에 씁니다. 순서와 해시 확인을 건너뛰지 마세요. 모든 책임은 본인에게 있습니다.
 
@@ -324,16 +324,35 @@ Get-FileHash magisk_patched_boot.img                 # 4F8136E2… 인지 한 �
 
 ### 5.3. 루팅 확인과 셸 허용
 
-켜진 뒤 `adb devices`에 안 보이면 케이블을 다시 꽂고:
+켜진 뒤 `adb devices`에 안 보이면 케이블을 다시 꽂습니다. 먼저 **부팅이 끝났는지** 확인합니다.
+
+```powershell
+.\adb wait-for-device
+.\adb shell getprop sys.boot_completed               # 1 이 나올 때까지, 안 나오면 30초 뒤 다시
+```
+
+`1`이 나오면:
 
 ```powershell
 .\adb shell magisk -v                                # 30.7:MAGISK:R
 .\adb shell su -c id                                 # 태블릿에 허용 창이 뜸 → 빨리 [허용]
 ```
 
-- ✅ 정상: `uid=0(root)` 가 나옴
+- ✅ 정상: `30.7:MAGISK:R`, 그리고 `uid=0(root)` 가 나옴
+- ❌ `magisk: inaccessible or not found`: **루팅 실패가 아닐 수 있습니다. boot를 다시 쓰지 말고** 아래부터 확인하세요.
+
+  ```powershell
+  .\adb shell "df | grep magisk"                     # /debug_ramdisk 줄이 보이는지
+  ```
+
+  1. `magisk … /debug_ramdisk` 줄이 보이면 Magisk가 든 boot로 켜진 것입니다. 태블릿에서 **Magisk** 앱을 엽니다. **"추가 설정이 필요합니다"**가 나오면 [확인]을 누르세요. 기기가 다시 시작됩니다.
+  2. 다시 켜지면 위의 `sys.boot_completed` 확인부터 다시 합니다.
+  3. 줄이 안 보이면 5.2에서 `Writing 'boot' … OKAY`가 나왔는지 확인하고, [이슈](https://github.com/zlkiki/AOC-10W1D-DSU-Root/issues)에 출력을 남겨 주세요.
+
+  > 사용자 보고: 첫 부팅에서 이 명령이 `not found`였지만 `/debug_ramdisk`가 보였고, Magisk 앱에서 설정하자 기기가 재시작된 뒤로는 안내서대로 정상이었습니다. 검증 기기에서는 첫 부팅부터 정상이라 원인은 아직 확인하지 못했습니다.
+
 - ❌ `Permission denied`: E-Ink는 화면이 느려서 허용 창이 10초 안에 안 눌리면 **자동으로 '거부'가 저장**됩니다. 태블릿에서 **Magisk 앱 → 아래 [슈퍼유저] 탭 → "[SharedUID] 셸" 스위치 켜기** → 명령 다시 실행. <img src="images/07_magisk_superuser.png" width="300">
-- Magisk 앱을 처음 열 때 "추가 설정이 필요합니다"가 나오면 [확인]을 누르세요(재시작됨).
+- 위와 상관없이 Magisk 앱을 열었을 때 "추가 설정이 필요합니다"가 나오면 [확인]을 누르세요(기기가 다시 시작됨).
 - Magisk 앱이 **앱 업데이트**를 권해도 지금은 누르지 마세요(30.7로 검증했습니다).
 
 ---
@@ -448,7 +467,7 @@ A copy-and-paste guide for **AOC_10W1D** (RK3566, Android 11, firmware `WT10S2CN
 
 1. **Developer options**: Settings → About Device → tap the **title "About Device"** 7–8 times → password **2204** → Android Settings opens → tap the **AOC_10W1D** header → About tablet → tap **Build number** 7 times → password **2204** → "You are now a developer" → System → Developer options → **USB debugging**.
 2. **Temporary DSU boot + full backup** (no system partition is written): push the diagnostic GSI, `setprop persist.sys.fflag.override.settings_dynamic_system true`, start the install with `KEY_SYSTEM_SIZE 2325557248` and `KEY_USERDATA_SIZE 17179869184`, tap **Restart** in the notification, wait ~3 min (the E-Ink screen stays frozen on the logo; that is expected), `adb root`, `touch /data/local/tmp/dsudiag_stop`, `stop`, then `sh tools/aoc_backup_partitions.sh` (every partition except userdata, SHA-256 checked twice) and `adb pull`. Keep the backup in two places. `adb reboot` returns to stock; `gsi_tool wipe`.
-3. **Magisk 30.7**: `tools/aoc_magisk_patch.sh` patches the stock boot on the device (this firmware has no DocumentsUI, so the app's "Select and Patch a File" has no picker). Stock boot `190133…` must give `4f8136e2…`, the exact image verified on the test device. `adb reboot fastboot` → `fastboot flash boot magisk_patched_boot.img`. E-Ink makes the first su prompt time out and Magisk saves *deny*; enable Shell / the app in Magisk → Superuser.
+3. **Magisk 30.7**: `tools/aoc_magisk_patch.sh` patches the stock boot on the device (this firmware has no DocumentsUI, so the app's "Select and Patch a File" has no picker). Stock boot `190133…` must give `4f8136e2…`, the exact image verified on the test device. `adb reboot fastboot` → `fastboot flash boot magisk_patched_boot.img`. Wait for `sys.boot_completed` = 1. If `magisk -v` says *inaccessible or not found* on the first boot, do not reflash: check `adb shell "df | grep magisk"` for `/debug_ramdisk`, open the Magisk app, accept *Additional setup* (it reboots), then check again. E-Ink makes the first su prompt time out and Magisk saves *deny*; enable Shell / the app in Magisk → Superuser.
 4. **E-Ink Screens app 1.2**: pick a folder and a photo for sleep, power-off, boot logo, boot animation and off-charging screens, or tap **Stock** to revert. The app backs up the logo partition on first run. Theme pack: 9 text-free themes × 5 images.
 5. **Full revert**: Stock for all five screens → reboot → `fastboot flash boot` the stock boot → uninstall both apps.
 
